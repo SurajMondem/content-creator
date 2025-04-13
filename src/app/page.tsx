@@ -669,10 +669,10 @@ export default function Home() {
                 </div>
               </div>
               <p className="text-foreground/90">
-                "I've been looking for a tool like this for ages! I can finally
-                repurpose content across platforms without spending hours
-                reformatting everything. The AI formatting feels natural and
-                platform-appropriate."
+                &quot;I&apos;ve been looking for a tool like this for ages! I
+                can finally repurpose content across platforms without spending
+                hours reformatting everything. The AI formatting feels natural
+                and platform-appropriate.&quot;
               </p>
             </motion.div>
 
@@ -699,10 +699,10 @@ export default function Home() {
                 </div>
               </div>
               <p className="text-foreground/90">
-                "As a busy founder, I need to be present on social media but
-                can't spend hours creating content. Persona AI lets me share
-                ideas quickly across platforms. The one-click publishing feature
-                is a game-changer."
+                &quot;As a busy founder, I need to be present on social media
+                but can&apos;t spend hours creating content. Persona AI lets me
+                share ideas quickly across platforms. The one-click publishing
+                feature is a game-changer.&quot;
               </p>
             </motion.div>
 
@@ -729,10 +729,10 @@ export default function Home() {
                 </div>
               </div>
               <p className="text-foreground/90">
-                "The platform previews are incredibly accurate - what you see is
-                exactly what gets posted. The customization options for AI
-                templates give me the perfect balance of automation and creative
-                control."
+                &quot;The platform previews are incredibly accurate - what you
+                see is exactly what gets posted. The customization options for
+                AI templates give me the perfect balance of automation and
+                creative control.&quot;
               </p>
             </motion.div>
           </div>
@@ -1009,8 +1009,8 @@ export default function Home() {
                   Thank you for joining!
                 </h3>
                 <p className="text-foreground/80">
-                  We'll notify you as soon as Persona AI is ready for you to
-                  try. Keep an eye on your inbox for updates and early access
+                  We&apos;ll notify you as soon as Persona AI is ready for you
+                  to try. Keep an eye on your inbox for updates and early access
                   information.
                 </p>
               </motion.div>
