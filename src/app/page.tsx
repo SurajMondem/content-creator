@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from './components/ThemeToggle';
 import { useTheme } from './ThemeProvider';
+import Image from 'next/image';
 
 export default function Home() {
   const { theme } = useTheme();
@@ -208,9 +209,11 @@ export default function Home() {
                       } p-3 flex items-center`}
                     >
                       <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#0a66c2] font-semibold text-lg mr-3 border border-gray-200">
-                        <img
+                        <Image
                           src="https://i.pravatar.cc/100?img=12"
                           alt="Profile"
+                          width={48}
+                          height={48}
                           className="w-full h-full rounded-full object-cover"
                         />
                       </div>
