@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Models
+model User {
+  id               String              @id @default(uuid())
+  clerkId          String              @unique
+  email            String              @unique
+  name             String?
+  profileImage     String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  posts            Post[]
+  socialIntegrations SocialIntegration[]
+  prefersDarkMode  Boolean             @default(false)
+}
+
+model Post {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawContent       String
+  imageUrl         String?
+  linkedinContent  String?
+  twitterContent   String?
+  status           PostStatus @default(DRAFT)
+  templateId       String?
+  template         Template?  @relation(fields: [templateId], references: [id])
+  linkedinPostId   String?
+  twitterPostId    String?
+  linkedinPostUrl  String?
+  twitterPostUrl   String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  publishedAt      DateTime?
+}
+
+model Template {
+  id               String    @id @default(uuid())
+  name             String
+  description      String?
+  promptText       String
+  platform         Platform
+  isDefault        Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  posts            Post[]
+}
+
+model SocialIntegration {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform         Platform
+  accessToken      String
+  refreshToken     String?
+  expiresAt        DateTime?
+  platformUserId   String?
+  platformUserName String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([userId, platform])
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum Platform {
+  LINKEDIN
+  TWITTER
+}

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import ThemeToggle from './components/ThemeToggle';
-import { useTheme } from './ThemeProvider';
+import ThemeToggle from '@/components/ThemeToggle';
+import { useTheme } from '@/components/ThemeProvider';
 import Image from 'next/image';
 
 export default function Home() {
