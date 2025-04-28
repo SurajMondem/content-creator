@@ -1,6 +1,30 @@
-import { SignUp } from '@clerk/nextjs';
+'use client';
+
+import { useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function SignUpPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
+    }
+
+    setLoading(false);
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="w-full max-w-md p-8 space-y-8 bg-card rounded-lg shadow-lg">
@@ -10,16 +34,32 @@ export default function SignUpPage() {
             Create your account to get started
           </p>
         </div>
-        <SignUp
-          appearance={{
-            elements: {
-              formButtonPrimary:
-                'bg-primary text-primary-foreground hover:bg-primary/90',
-              card: 'bg-transparent shadow-none',
-            },
-          }}
-          redirectUrl="/dashboard"
-        />
+        <form onSubmit={handleSignUp} className="space-y-4">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-2 border rounded"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-2 border rounded"
+            required
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full px-4 py-2 bg-primary text-white rounded hover:bg-primary/80"
+          >
+            {loading ? 'Signing up...' : 'Sign Up'}
+          </button>
+        </form>
+        {error && <div className="text-red-500 text-center">{error}</div>}
       </div>
     </div>
   );

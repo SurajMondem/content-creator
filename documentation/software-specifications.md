@@ -34,14 +34,14 @@
 # Technical Stack
 
 - **Frontend:** React, Next.js, Tailwind CSS, Shadcn UI, Lucide Icons, Sonner Toast.
-- **Backend:** Prisma, Supabase, Vercel.
-- **Authentication & Payment:** Clerk Auth, Stripe.
+- **Backend:** Supabase, Vercel.
+- **Authentication & Payment:** Supabase Auth, Stripe.
 - **Integrations:** OAuth for social media (LinkedIn, Twitter).
 - **Analytics & Observability:** PostHog for product analytics, session recording, and feature flags.
 
 # Authentication Process
 
-- User registration and login managed via Clerk Auth.
+- User registration and login managed via Supabase Auth.
 - Social media account integration via OAuth (initially LinkedIn and Twitter).
 - Secure session management with token storage.
 - Role-based access control for content creation and management.

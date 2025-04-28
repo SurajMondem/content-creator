@@ -2,41 +2,58 @@
 
 ## 1. Database and Schema Setup
 
-### 1.1 Configure Prisma with Supabase
+### 1.1 Configure Supabase Database Connection
 
-- **Description**: Set up Prisma ORM to work with Supabase PostgreSQL database, including environment configuration and initial setup.
+- **Description**: Set up direct connection to Supabase PostgreSQL database, including environment configuration and initial setup.
 - **Implementation Prompt**:
   ```
-  Create a Prisma configuration for a content creator application using Supabase as the database provider.
-  Set up the schema.prisma file with PostgreSQL provider pointing to an environment variable DATABASE_URL.
-  Generate a client configuration and add any necessary scripts to package.json for Prisma migrations.
-  Also create a .env.example file showing the required environment variables.
+  Create a Supabase database connection configuration for a content creator application.
+  Set up a database client utility that connects to Supabase.
+  Configure necessary environment variables for Supabase connection.
+  Create an .env.example file showing the required environment variables.
   ```
 - **Code Snippet**:
 
   ```typescript
-  // schema.prisma
-  generator client {
-    provider = "prisma-client-js"
-  }
+  // lib/supabase.ts
+  import { createClient } from '@supabase/supabase-js';
 
-  datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
-  }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+
+  // Create a single supabase client for the entire app
+  export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  // Helper functions for database operations
+  export const db = {
+    // Users
+    async getUser(id: string) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    // Add more helper functions as needed
+  };
 
   // package.json scripts
   {
     "scripts": {
-      "prisma:generate": "prisma generate",
-      "prisma:migrate": "prisma migrate dev",
-      "prisma:deploy": "prisma migrate deploy",
-      "prisma:studio": "prisma studio"
+      "dev": "next dev",
+      "build": "next build",
+      "start": "next start"
     }
   }
 
   // .env.example
-  DATABASE_URL="postgresql://postgres:password@localhost:5432/content_creator?schema=public"
+  NEXT_PUBLIC_SUPABASE_URL="https://your-project-id.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+  SUPABASE_SERVICE_ROLE_KEY="your-service-role-key" # Only use server-side
   ```
 
 ### 1.2 Enable Vector Extension in Supabase
@@ -46,16 +63,16 @@
   ```
   Create a SQL migration file that enables the vector extension in Supabase PostgreSQL.
   The file should contain the SQL command to create the extension if it doesn't exist.
-  Also add instructions in the README on how to run this command in the Supabase SQL editor.
+  Add instructions in the README on how to run this command in the Supabase SQL editor.
   ```
 - **Code Snippet**:
 
-  ````sql
+  ```sql
   -- enable_vector_extension.sql
   CREATE EXTENSION IF NOT EXISTS vector;
+  ```
 
-  -- In README.md
-  /*
+  ````markdown
   ## Vector Search Setup
 
   To enable vector search in Supabase:
@@ -67,13 +84,13 @@
   5. Paste the following SQL and run it:
      ```sql
      CREATE EXTENSION IF NOT EXISTS vector;
+     ```
   ````
 
   6. Verify the extension is enabled by running:
      ```sql
      SELECT * FROM pg_extension WHERE extname = 'vector';
      ```
-     \*/
 
   ```
 
@@ -81,18 +98,18 @@
 
 ### 1.3 Define Database Schema
 
-- **Description**: Create a comprehensive Prisma schema with all required models for the application, including vector embeddings support.
+- **Description**: Create the database schema directly in Supabase with all required tables for the application, including vector embeddings support.
 - **Implementation Prompt**:
 
   ```
-  Create a complete Prisma schema for a content creator application with the following models:
-  1. User (linked to Clerk auth)
-  2. Conversation
-  3. Message
-  4. GeneratedContent
-  5. Template
-  6. SocialProfile
-  7. Embedding (with vector support)
+  Create a SQL migration that sets up the database schema for a content creator application with the following tables:
+  1. users (integrated with Supabase Auth)
+  2. conversations
+  3. messages
+  4. generated_content
+  5. templates
+  6. social_profiles
+  7. embeddings (with vector support)
 
   The schema should support:
   - Vector embeddings for RAG implementation
@@ -101,125 +118,7 @@
   - Template management with categories
   - Social media profile connections
 
-  Use appropriate field types, relations, and indexes, especially for the vector fields.
-  ```
-
-- **Code Snippet**:
-
-  ```prisma
-  // schema.prisma
-  generator client {
-    provider = "prisma-client-js"
-  }
-
-  datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
-  }
-
-  model User {
-    id               String            @id
-    clerkId          String            @unique
-    email            String            @unique
-    name             String?
-    image            String?
-    createdAt        DateTime          @default(now())
-    updatedAt        DateTime          @updatedAt
-    conversations    Conversation[]
-    socialProfiles   SocialProfile[]
-    favoriteTemplates Template[]       @relation("UserFavorites")
-  }
-
-  model Conversation {
-    id          String    @id @default(cuid())
-    title       String
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
-    userId      String
-    user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-    messages    Message[]
-    contents    GeneratedContent[]
-    embedding   Embedding?
-  }
-
-  model Message {
-    id             String    @id @default(cuid())
-    text           String    @db.Text
-    isUserMessage  Boolean   @default(true)
-    createdAt      DateTime  @default(now())
-    conversationId String
-    conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-    embedding      Embedding?
-  }
-
-  model Embedding {
-    id              String        @id @default(cuid())
-    vector          Unsupported("vector(1536)")  // For OpenAI embeddings
-    messageId       String?       @unique
-    message         Message?      @relation(fields: [messageId], references: [id], onDelete: Cascade)
-    conversationId  String?       @unique
-    conversation    Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-    contentId       String?       @unique
-    content         GeneratedContent? @relation(fields: [contentId], references: [id], onDelete: Cascade)
-    createdAt       DateTime      @default(now())
-
-    @@index([vector], type: Vector)
-  }
-
-  model GeneratedContent {
-    id             String    @id @default(cuid())
-    content        String    @db.Text
-    platform       Platform
-    conversationId String
-    conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-    createdAt      DateTime  @default(now())
-    feedbackRating Int?
-    published      Boolean   @default(false)
-    publishedUrl   String?
-    embedding      Embedding?
-  }
-
-  model Template {
-    id          String           @id @default(cuid())
-    name        String
-    description String?
-    prompt      String           @db.Text
-    category    TemplateCategory
-    createdAt   DateTime         @default(now())
-    updatedAt   DateTime         @updatedAt
-    usageCount  Int              @default(0)
-    favoritedBy User[]           @relation("UserFavorites")
-  }
-
-  model SocialProfile {
-    id            String    @id @default(cuid())
-    platform      Platform
-    accessToken   String?
-    refreshToken  String?
-    profileName   String?
-    profileId     String?
-    isConnected   Boolean   @default(false)
-    lastConnected DateTime?
-    userId        String
-    user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  }
-
-  enum Platform {
-    TWITTER
-    LINKEDIN
-    INSTAGRAM
-    FACEBOOK
-  }
-
-  enum TemplateCategory {
-    BLOG_POST
-    SOCIAL_MEDIA
-    PRODUCT_DESCRIPTION
-    EMAIL
-    NEWSLETTER
-    PRESS_RELEASE
-    ADVERTISEMENT
-  }
+  Use appropriate field types, foreign keys, and indexes, especially for the vector fields.
   ```
 
 ### 1.4 Generate Initial Migration
