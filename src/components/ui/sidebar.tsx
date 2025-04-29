@@ -6,11 +6,12 @@ import React, { useState, createContext, useContext } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 
-interface Links {
+export type Links = {
   label: string;
-  href: string;
-  icon: React.JSX.Element | React.ReactNode;
-}
+  icon: React.ReactNode;
+  href?: string;
+  onClick?: () => void;
+};
 
 interface SidebarContextProps {
   open: boolean;
@@ -164,9 +165,38 @@ export const SidebarLink = ({
   props?: LinkProps;
 }) => {
   const { open, animate } = useSidebar();
+
+  if (link.onClick) {
+    return (
+      <button
+        type="button"
+        onClick={link.onClick}
+        className={cn(
+          'flex items-center justify-start gap-2 group/sidebar py-2 w-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer',
+          className
+        )}
+        {...props}
+      >
+        {link.icon}
+        <motion.span
+          animate={{
+            display: animate
+              ? open
+                ? 'inline-block'
+                : 'none'
+              : 'inline-block',
+          }}
+          className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+        >
+          {link.label}
+        </motion.span>
+      </button>
+    );
+  }
+
   return (
     <Link
-      href={link.href}
+      href={link.href ?? '#'}
       className={cn(
         'flex items-center justify-start gap-2 group/sidebar py-2',
         className

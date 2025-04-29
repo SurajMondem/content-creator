@@ -2,15 +2,21 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -18,25 +24,30 @@ export default function SignInPage() {
 
     if (error) {
       setError(error.message);
+      setLoading(false);
+      return;
     }
 
-    if (data) {
-      console.log(data);
+    if (data?.user) {
+      router.push('/dashboard');
     }
   };
 
   const handleGoogleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
     });
 
     if (error) {
       setError(error.message);
-    }
-
-    if (data) {
-      console.log(data);
+      setLoading(false);
     }
   };
 
@@ -87,6 +98,14 @@ export default function SignInPage() {
           {loading ? 'Redirecting...' : 'Sign in with Google'}
         </button>
         {error && <p className="text-red-500 text-center mt-2">{error}</p>}
+        <div className="text-center mt-4">
+          <p className="text-sm text-muted-foreground">
+            Don&apos;t have an account?{' '}
+            <Link href="/sign-up" className="text-primary hover:underline">
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

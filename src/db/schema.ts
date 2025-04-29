@@ -10,7 +10,6 @@ import {
   boolean,
   integer,
   index,
-  check,
   pgEnum,
   pgSchema,
 } from 'drizzle-orm/pg-core';
@@ -117,6 +116,7 @@ export const messages = pgTable(
     text: text().notNull(),
     isUserMessage: boolean('is_user_message').default(true).notNull(),
     conversationId: uuid('conversation_id').notNull(),
+    userId: uuid('user_id').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .defaultNow()
       .notNull(),
@@ -126,6 +126,11 @@ export const messages = pgTable(
       columns: [table.conversationId],
       foreignColumns: [conversations.id],
       name: 'messages_conversation_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'messages_user_id_fkey',
     }).onDelete('cascade'),
     pgPolicy('Users can create messages in their own conversations.', {
       as: 'permissive',
@@ -139,41 +144,6 @@ export const messages = pgTable(
       as: 'permissive',
       for: 'select',
       to: ['public'],
-    }),
-  ]
-);
-
-export const generatedContent = pgTable(
-  'generated_content',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    content: text().notNull(),
-    platform: platformType().notNull(),
-    conversationId: uuid('conversation_id').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    feedbackRating: integer('feedback_rating'),
-    published: boolean().default(false).notNull(),
-    publishedUrl: text('published_url'),
-    userId: uuid('user_id').notNull(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.conversationId],
-      foreignColumns: [conversations.id],
-      name: 'generated_content_conversation_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [users.id],
-      name: 'generated_content_user_id_fkey',
-    }).onDelete('cascade'),
-    pgPolicy('Users can CRUD their own generated content.', {
-      as: 'permissive',
-      for: 'all',
-      to: ['public'],
-      using: sql`(auth.uid() = user_id)`,
     }),
   ]
 );
@@ -200,8 +170,6 @@ export const embeddings = pgTable(
     id: uuid().defaultRandom().primaryKey().notNull(),
     embedding: vector({ dimensions: 1536 }).notNull(),
     messageId: uuid('message_id'),
-    conversationId: uuid('conversation_id'),
-    contentId: uuid('content_id'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .defaultNow()
       .notNull(),
@@ -212,23 +180,9 @@ export const embeddings = pgTable(
       table.embedding.asc().nullsLast().op('vector_cosine_ops')
     ),
     foreignKey({
-      columns: [table.contentId],
-      foreignColumns: [generatedContent.id],
-      name: 'embeddings_content_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.conversationId],
-      foreignColumns: [conversations.id],
-      name: 'embeddings_conversation_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
       columns: [table.messageId],
       foreignColumns: [messages.id],
       name: 'embeddings_message_id_fkey',
     }).onDelete('cascade'),
-    check(
-      'exclusive_embedding_ref',
-      sql`((((message_id IS NOT NULL))::integer + ((conversation_id IS NOT NULL))::integer) + ((content_id IS NOT NULL))::integer) = 1`
-    ),
   ]
 );

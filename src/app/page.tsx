@@ -85,12 +85,12 @@ export default function Home() {
               Platforms
             </a>
             <motion.a
-              href="#waitlist"
+              href="/sign-in"
               className="bg-accent hover:bg-accent-hover text-white px-6 py-2 rounded-full transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Join Waitlist
+              Get Started
             </motion.a>
           </nav>
         </div>
@@ -126,7 +126,7 @@ export default function Home() {
               transition={{ delay: 0.4, duration: 0.5 }}
             >
               <motion.a
-                href="#waitlist"
+                href="/sign-in"
                 className="bg-accent hover:bg-accent-hover text-white font-semibold px-8 py-4 rounded-lg shadow-lg transition duration-300 text-center"
                 whileHover={{
                   scale: 1.05,
@@ -134,7 +134,7 @@ export default function Home() {
                 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Join the Waitlist
+                Get Started
               </motion.a>
               <motion.a
                 href="#features"
@@ -606,7 +606,7 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.6 }}
           >
             <motion.a
-              href="#waitlist"
+              href="/sign-in"
               className="inline-block bg-accent hover:bg-accent-hover text-white font-semibold px-8 py-4 rounded-lg shadow-lg transition duration-300"
               whileHover={{
                 scale: 1.05,
@@ -1088,7 +1088,7 @@ export default function Home() {
               <p>&copy; 2024 Persona AI. All rights reserved.</p>
               <div className="mt-4">
                 <motion.a
-                  href="#waitlist"
+                  href="/sign-in"
                   className="bg-accent hover:bg-accent-hover text-white px-6 py-2 rounded-full transition-colors text-sm"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}

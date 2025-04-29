@@ -14,6 +14,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useChat } from '@ai-sdk/react';
 
 interface UseAutoResizeTextareaProps {
   minHeight: number;
@@ -81,13 +82,22 @@ function useAutoResizeTextarea({
 }
 
 export function ChatFlow() {
+  const {
+    messages: aiMessages,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isLoading: aiLoading,
+  } = useChat({
+    maxSteps: 3,
+    api: '/api/chat',
+  });
+
   const [value, setValue] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatStarted, setChatStarted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [responseText, setResponseText] = useState('');
-  const [streamComplete, setStreamComplete] = useState(false);
   const [selectedPlatform, setSelectedPlatform] =
     useState<SocialPlatform>(null);
 
@@ -100,122 +110,42 @@ export function ChatFlow() {
     maxHeight: 200,
   });
 
+  // Update local input when AI input changes
+  useEffect(() => {
+    setValue(input);
+  }, [input]);
+
+  // Convert AI messages to our Message format
+  useEffect(() => {
+    if (aiMessages.length > 0 && !chatStarted) {
+      setChatStarted(true);
+    }
+
+    const formattedMessages = aiMessages.map((msg) => ({
+      id: msg.id,
+      text: msg.content,
+      isUser: msg.role === 'user',
+      socialPreview:
+        selectedPlatform && msg.role === 'assistant'
+          ? {
+              platform: selectedPlatform,
+              content: `Here's how this would look on ${selectedPlatform === 'twitter' ? 'Twitter' : 'LinkedIn'}: ${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`,
+            }
+          : undefined,
+    }));
+
+    setMessages(formattedMessages);
+    setIsLoading(aiLoading);
+  }, [aiMessages, aiLoading, chatStarted, selectedPlatform]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (value.trim()) {
-        handleSendMessage();
+        handleSubmit(e);
       }
     }
   };
-
-  const simulateStreamingResponse = () => {
-    // Simulated response text - replace with actual API call
-    const fullResponse = `I received your message and here's my response. This is a simulated streaming response that would come from an LLM API using Server-Sent Events (SSE). In a real implementation, you would connect to an API endpoint that supports streaming and update the UI as chunks arrive.`;
-
-    let currentIndex = 0;
-    const streamingInterval = setInterval(() => {
-      if (currentIndex < fullResponse.length) {
-        // Simulate chunked response by adding a few characters at a time
-        const nextChunkSize = Math.min(5, fullResponse.length - currentIndex);
-        const nextChunk = fullResponse.substring(
-          currentIndex,
-          currentIndex + nextChunkSize
-        );
-        setResponseText((prev) => prev + nextChunk);
-        currentIndex += nextChunkSize;
-      } else {
-        clearInterval(streamingInterval);
-        setStreamComplete(true);
-        // Generate social preview after stream completes
-        setTimeout(() => {
-          generateSocialPreview();
-        }, 500);
-      }
-    }, 50);
-  };
-
-  const generateSocialPreview = () => {
-    // In a real app, this would use the LLM response to generate platform-specific content
-    // For now, we're just setting a default platform if none selected
-    const platform = selectedPlatform || 'twitter';
-    setSelectedPlatform(platform);
-
-    const socialPreview = {
-      platform: platform,
-      content:
-        platform === 'twitter'
-          ? "Here's how this would look as a Tweet. Short, engaging, and with relevant hashtags. #ContentCreation #AI"
-          : "Here's a more professional LinkedIn post format with industry insights and a call to action for your network.",
-    };
-
-    // Update the most recent AI message with the social preview
-    setMessages((prev) => {
-      const newMessages = [...prev];
-      if (
-        newMessages.length >= 2 &&
-        !newMessages[newMessages.length - 1].isUser
-      ) {
-        newMessages[newMessages.length - 1].socialPreview = {
-          platform: platform,
-          content: socialPreview.content,
-        };
-      }
-      return newMessages;
-    });
-  };
-
-  const handleSendMessage = () => {
-    if (!value.trim()) return;
-
-    // Add user message
-    const userMessage = {
-      id: Date.now().toString(),
-      text: value.trim(),
-      isUser: true,
-    };
-    setMessages((prev) => [...prev, userMessage]);
-
-    // Reset states for new message flow
-    setResponseText('');
-    setStreamComplete(false);
-    setIsLoading(true);
-
-    // Create placeholder for AI response that will be updated
-    const aiMessage = {
-      id: (Date.now() + 1).toString(),
-      text: '',
-      isUser: false,
-    };
-    setMessages((prev) => [...prev, aiMessage]);
-
-    // Start simulated streaming after a short delay
-    setTimeout(() => {
-      simulateStreamingResponse();
-    }, 1500);
-
-    setValue('');
-    adjustHeight(true);
-    setChatStarted(true);
-  };
-
-  // Update the AI message text as streaming happens
-  useEffect(() => {
-    if (responseText && messages.length > 0) {
-      setMessages((prev) => {
-        const newMessages = [...prev];
-        if (!newMessages[newMessages.length - 1].isUser) {
-          newMessages[newMessages.length - 1].text = responseText;
-        }
-        return newMessages;
-      });
-
-      // When stream is complete, we're no longer loading
-      if (streamComplete) {
-        setIsLoading(false);
-      }
-    }
-  }, [responseText, streamComplete]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -241,7 +171,16 @@ export function ChatFlow() {
   // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
-  }, [messages, responseText]);
+  }, [messages]);
+
+  // Submit the message manually (for button click)
+  const submitMessage = () => {
+    if (value.trim() && !isLoading) {
+      handleSubmit({
+        preventDefault: () => {},
+      } as React.FormEvent);
+    }
+  };
 
   const templates = [
     { icon: <FileText className="w-4 h-4 mr-2" />, name: 'Blog Post Template' },
@@ -457,6 +396,7 @@ export function ChatFlow() {
                   ref={textareaRef}
                   value={value}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                    handleInputChange(e);
                     setValue(e.target.value);
                     adjustHeight();
                   }}
@@ -506,7 +446,11 @@ export function ChatFlow() {
                             key={index}
                             className="flex items-center w-full px-4 py-2 text-sm text-zinc-300 hover:bg-neutral-800 transition-colors"
                             onClick={() => {
-                              setValue(`Using template: ${template.name}\n`);
+                              const templateText = `Using template: ${template.name}\n`;
+                              setValue(templateText);
+                              handleInputChange({
+                                target: { value: templateText },
+                              } as React.ChangeEvent<HTMLTextAreaElement>);
                               setDropdownOpen(false);
                               adjustHeight();
                             }}
@@ -553,20 +497,34 @@ export function ChatFlow() {
                       'px-1.5 py-1.5 rounded-lg text-sm transition-colors border border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800 flex items-center justify-between gap-1',
                       value.trim() ? 'bg-white text-black' : 'text-zinc-400'
                     )}
-                    onClick={handleSendMessage}
-                    disabled={!value.trim()}
+                    onClick={submitMessage}
+                    disabled={!value.trim() || isLoading}
                   >
-                    <ArrowUpIcon
-                      className={cn(
-                        'w-4 h-4',
-                        value.trim() ? 'text-black' : 'text-zinc-400'
-                      )}
-                    />
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ArrowUpIcon
+                        className={cn(
+                          'w-4 h-4',
+                          value.trim() ? 'text-black' : 'text-zinc-400'
+                        )}
+                      />
+                    )}
                     <span className="sr-only">Send</span>
                   </button>
                 </div>
               </div>
             </motion.div>
+
+            <motion.button
+              className="mt-8 text-center px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              onClick={() => setChatStarted(true)}
+            >
+              Get Started
+            </motion.button>
           </motion.div>
         ) : (
           // Chat started layout with flow blocks and input at bottom
@@ -673,6 +631,7 @@ export function ChatFlow() {
                   ref={textareaRef}
                   value={value}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                    handleInputChange(e);
                     setValue(e.target.value);
                     adjustHeight();
                   }}
@@ -722,7 +681,11 @@ export function ChatFlow() {
                             key={index}
                             className="flex items-center w-full px-4 py-2 text-sm text-zinc-300 hover:bg-neutral-800 transition-colors"
                             onClick={() => {
-                              setValue(`Using template: ${template.name}\n`);
+                              const templateText = `Using template: ${template.name}\n`;
+                              setValue(templateText);
+                              handleInputChange({
+                                target: { value: templateText },
+                              } as React.ChangeEvent<HTMLTextAreaElement>);
                               setDropdownOpen(false);
                               adjustHeight();
                             }}
@@ -769,7 +732,7 @@ export function ChatFlow() {
                       'px-1.5 py-1.5 rounded-lg text-sm transition-colors border border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800 flex items-center justify-between gap-1',
                       value.trim() ? 'bg-white text-black' : 'text-zinc-400'
                     )}
-                    onClick={handleSendMessage}
+                    onClick={submitMessage}
                     disabled={!value.trim() || isLoading}
                   >
                     {isLoading ? (

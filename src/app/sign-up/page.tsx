@@ -2,17 +2,21 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -20,9 +24,13 @@ export default function SignUpPage() {
 
     if (error) {
       setError(error.message);
+      setLoading(false);
+      return;
     }
 
-    setLoading(false);
+    if (data?.user) {
+      router.push('/dashboard');
+    }
   };
 
   return (
@@ -60,6 +68,14 @@ export default function SignUpPage() {
           </button>
         </form>
         {error && <div className="text-red-500 text-center">{error}</div>}
+        <div className="text-center mt-4">
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <Link href="/sign-in" className="text-primary hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

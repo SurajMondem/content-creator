@@ -8,6 +8,13 @@
       "when": 1745799468240,
       "tag": "0000_lying_supernaut",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1745894958909,
+      "tag": "0001_fast_satana",
+      "breakpoints": true
     }
   ]
 }
